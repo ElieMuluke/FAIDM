@@ -1,0 +1,1318 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PPO Learning Platform — Interactive Tutorial</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="logo">PPO</div>
+        <div>
+          <h1>RL</h1>
+          <p>Proximal Policy Optimization</p>
+        </div>
+      </div>
+      <nav class="nav">
+        <a href="#intro">Introduction</a>
+        <a href="#rl-basics">RL Fundamentals</a>
+        <a href="#policy-gradient-basics">Policy Gradients</a>
+        <a href="#the-problem">The Problem PPO Solves</a>
+        <a href="#ppo-intuition">PPO Intuition</a>
+        <a href="#ratio-explained">Understanding the Ratio</a>
+        <a href="#objective">Objective & Clipping</a>
+        <a href="#clipping-detailed">Clipping Deep Dive</a>
+        <a href="#advantages">What Are Advantages?</a>
+        <a href="#gae">GAE Explained</a>
+        <a href="#algorithm">Algorithm Steps</a>
+        <a href="#hyperparams">Hyperparameters</a>
+        <a href="#interactive-playground">Interactive Playground</a>
+        <a href="#exercises">Exercises</a>
+        <a href="#summary">Summary</a>
+      </nav>
+    </aside>
+
+    <main class="content">
+      <section id="intro" class="section">
+        <div class="hero">
+          <div class="hero-text">
+            <h2>Learn PPO the Easy Way</h2>
+            <p>
+              In this part of the session your will learn about Proximal Policy Optimization (PPO) with visual
+              intuition with clear math, and interactive experiments (in AWS Deep Racer). We'll start from
+              the very basics of reinforcement learning and build up to understanding
+              one of the most powerful and widely-used RL algorithms. No advanced
+              math background required – just curiosity and patience!
+            </p>
+            <div class="hero-actions">
+              <a class="button" href="#rl-basics">Start Learning</a>
+              <a class="button ghost" href="#interactive-playground">Try Playground</a>
+            </div>
+          </div>
+          <div class="hero-card">
+            <h3>What You'll Learn</h3>
+            <ul>
+              <li>Reinforcement learning fundamentals from scratch</li>
+              <li>Why we need policy gradient methods</li>
+              <li>The challenge of stable policy updates</li>
+              <li>How PPO solves this with elegant clipping</li>
+              <li>Practical tips for training PPO agents</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section id="rl-basics" class="section">
+        <h2>Reinforcement Learning Fundamentals</h2>
+        <p>
+          Before diving into PPO, let's understand what reinforcement learning is
+          and why it's different from other types of machine learning.
+        </p>
+        
+        <div class="card">
+          <h3>What is Reinforcement Learning?</h3>
+          <p>
+            Imagine teaching a dog a new trick. You don't explain the trick in words
+            or show thousands of examples. Instead, when the dog does something close
+            to what you want, you give it a treat (reward). When it does something
+            wrong, you don't reward it. Over time, the dog learns which actions lead
+            to treats.
+          </p>
+          <p>
+            <strong>Reinforcement Learning (RL)</strong> works the same way. An agent
+            (like a robot, game AI, or trading bot) tries different actions in an
+            environment. When it does well, it gets positive rewards. When it does
+            poorly, it gets negative rewards (or no reward). The agent's goal is to
+            learn a strategy (called a <strong>policy</strong>) that maximizes the
+            total reward it collects over time.
+          </p>
+        </div>
+
+        <div class="grid two">
+          <div class="card">
+            <h3>Key Components</h3>
+            <ul>
+              <li><strong>Agent:</strong> The learner/decision maker (e.g., a robot, game character)</li>
+              <li><strong>Environment:</strong> The world the agent interacts with</li>
+              <li><strong>State (s):</strong> Current situation the agent is in</li>
+              <li><strong>Action (a):</strong> What the agent can do</li>
+              <li><strong>Reward (r):</strong> Feedback signal (positive or negative)</li>
+              <li><strong>Policy (π):</strong> Strategy that maps states to actions</li>
+            </ul>
+          </div>
+
+          <div class="card">
+            <h3>Simple Example: Grid World</h3>
+            <p>
+              Imagine a robot in a 5×5 grid trying to reach a goal:
+            </p>
+            <ul>
+              <li><strong>State:</strong> Robot's current position (e.g., row 2, column 3)</li>
+              <li><strong>Actions:</strong> Move up, down, left, or right</li>
+              <li><strong>Reward:</strong> +10 for reaching goal, -1 for each step, -5 for hitting walls</li>
+              <li><strong>Policy:</strong> Which direction to move given current position</li>
+            </ul>
+            <p>
+              The robot learns through trial and error which moves lead to the goal
+              with the highest total reward.
+            </p>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Two Types of Policies</h3>
+          <p>
+            There are two main ways to represent a policy:
+          </p>
+          <ul>
+            <li>
+              <strong>Value-based:</strong> Learn which states are good (high value).
+              Pick actions that lead to high-value states. Examples: Q-Learning, DQN.
+              <p style="margin-top: 6px;"><em>Analogy:</em> Like a treasure hunter who rates each
+              location by how much gold is there, then always moves to the highest-rated spot.</p>
+            </li>
+            <li>
+              <strong>Policy-based:</strong> Directly learn which actions to take in
+              each state. Output a probability distribution over actions. Examples:
+              REINFORCE, PPO, A3C.
+              <p style="margin-top: 6px;"><em>Analogy:</em> Like a GPS that directly tells you
+              "70% chance turn left, 30% chance go straight" based on your current location.</p>
+            </li>
+          </ul>
+          <p>
+            <strong>PPO is a policy-based method.</strong> It learns a neural network
+            that directly outputs action probabilities given a state. This is especially
+            useful for continuous actions (like steering angles) and stochastic environments.
+          </p>
+        </div>
+      </section>
+
+      <section id="policy-gradient-basics" class="section">
+        <h2>Policy Gradients </h2>
+        
+        <div class="card">
+          <h3>The Basic Idea</h3>
+          <p>
+            Think of your policy as a neural network. You give it a state (like the
+            game screen), and it outputs probabilities for each action (like "60%
+            chance move left, 40% chance move right").
+          </p>
+          <p>
+            <strong>Policy gradient methods</strong> adjust the network's weights to
+            make good actions more likely and bad actions less likely. It's like
+            turning knobs on the network to improve performance.
+          </p>
+        </div>
+
+        <div class="grid two">
+          <div class="card">
+            <h3>How Do We Update?</h3>
+            <p>
+              After the agent plays an episode (one complete game/trajectory), we
+              look at what happened:
+            </p>
+            <ol>
+              <li>Collect all states, actions, and rewards from the episode</li>
+              <li>Calculate the "return" from each state (total future reward)</li>
+              <li>Increase probability of actions that led to high returns</li>
+              <li>Decrease probability of actions that led to low returns</li>
+            </ol>
+            <p>
+              This is done using gradient ascent – climbing up the hill of better
+              performance.
+            </p>
+          </div>
+
+          <div class="card">
+            <h3>The Basic Formula</h3>
+            <p>
+              The policy gradient theorem tells us how to update:
+            </p>
+            <div class="math">
+              $$\nabla J(\theta) = \mathbb{E}[\nabla \log \pi_\theta(a|s) \cdot R]$$
+            </div>
+            <p style="margin-top: 12px;">
+              In plain English: "Update the policy parameters ($\theta$) in the
+              direction that increases the log-probability of actions weighted by
+              their returns ($R$)."
+            </p>
+            <p style="margin-top: 12px;">
+              <strong>Concrete Example:</strong> Imagine playing a simple game where you scored
+              100 points. If you moved left and got 100 points, you increase the probability
+              of moving left. If you moved right and only got 10 points, you decrease the
+              probability of moving right. The gradient tells us exactly how much to adjust
+              each action's probability based on the outcome.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section id="the-problem" class="section">
+        <h2>The Problem PPO Solves</h2>
+        
+        <div class="card">
+          <h3>Why Not Just Use Basic Policy Gradient?</h3>
+          <p>
+            Basic policy gradient methods (like REINFORCE) have a major weakness:
+            <strong>they're extremely sensitive to the learning rate</strong>.
+          </p>
+          <ul>
+            <li>
+              <strong>Learning rate too high:</strong> One bad update can completely
+              ruin your policy. Your agent might go from working pretty well to
+              completely failing in just one step. This is called "catastrophic
+              forgetting" or "policy collapse."
+            </li>
+            <li>
+              <strong>Learning rate too low:</strong> Training takes forever. Your
+              agent barely improves even after millions of steps.
+            </li>
+          </ul>
+        </div>
+
+        <div class="grid two">
+          <div class="card">
+            <h3>A Real Example: Robot Learning to Walk</h3>
+            <p>
+              Imagine training a robot to walk:
+            </p>
+            <ul>
+              <li><strong>Day 1-30:</strong> After 1000 episodes, it learns to take small, stable steps</li>
+              <li><strong>Day 31 - The Disaster:</strong> One unlucky episode happens to get very high rewards just by chance
+                (maybe it stumbled forward quickly before falling)</li>
+              <li><strong>The Bad Update:</strong> The gradient update is too large – suddenly the policy changes drastically,
+                thinking "stumbling forward fast" is the best strategy</li>
+              <li><strong>Day 32 onwards:</strong> Now the robot flails wildly and falls every time. All that learning
+                from 1000 episodes... gone!</li>
+              <li><strong>The Problem:</strong> It's very hard to recover from this! The robot would need to randomly
+                discover stable walking again.</li>
+            </ul>
+            <p style="margin-top: 12px;">
+              <strong>Real-World Impact:</strong> This happened to researchers training robotic systems in the early days.
+              A single bad gradient update could ruin weeks of training. PPO was designed specifically to prevent this
+              nightmare scenario!
+            </p>
+          </div>
+
+          <div class="card">
+            <h3>What We Need</h3>
+            <p>
+              We need a way to make updates that:
+            </p>
+            <ul>
+              <li>✓ Are large enough to make progress</li>
+              <li>✓ Are small enough to avoid breaking the policy</li>
+              <li>✓ Automatically adapt based on how much the policy is changing</li>
+              <li>✓ Work reliably across different tasks</li>
+            </ul>
+            <p>
+              <strong>This is exactly what PPO does!</strong>
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section id="ppo-intuition" class="section">
+        <h2>PPO Intuition: The Big Idea</h2>
+        
+        <div class="card">
+          <h3>The Core Principle</h3>
+          <p>
+            PPO's main insight is beautifully simple: <strong>don't change your
+            policy too much in one step</strong>.
+          </p>
+          <p>
+            Think of it like this: You're teaching someone to play basketball. You
+            don't say "forget everything you learned and completely change your
+            technique." Instead, you make small adjustments: "Keep your form mostly
+            the same, but bend your knees a bit more."
+          </p>
+          <p style="margin-top: 12px;">
+            <strong>Another Analogy:</strong> Imagine adjusting your car's steering wheel. Small, smooth
+            corrections keep you on the road. But if you jerk the wheel too hard based on one pothole,
+            you might swerve off the road entirely! PPO is like power steering with a safety limit –
+            you can turn, but not so violently that you flip the car.
+          </p>
+          <p>
+            PPO does the same thing. It says: "Your current policy is our reference
+            point. We'll improve it, but we won't let the new policy stray too far
+            from it."
+          </p>
+        </div>
+
+        <div class="grid two">
+          <div class="card">
+            <h3>The Trust Region Idea</h3>
+            <p>
+              There's an earlier algorithm called TRPO (Trust Region Policy
+              Optimization) that had this idea first. It used complex math
+              (KL divergence constraints) to keep the new policy close to the old one.
+            </p>
+            <p>
+              <strong>PPO's genius:</strong> Instead of complex constraints, just use
+              clipping! If the new policy tries to change too much, simply clip it
+              back. Much simpler to implement and just as effective.
+            </p>
+          </div>
+
+          <div class="card">
+            <h3>Why This Works</h3>
+            <p>
+              Small, conservative updates have huge benefits:
+            </p>
+            <ul>
+              <li>Policy rarely collapses or breaks</li>
+              <li>Training is more stable and predictable</li>
+              <li>You can reuse data multiple times (more efficient!)</li>
+              <li>Less sensitive to hyperparameter choices</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section id="ratio-explained" class="section">
+        <h2>Understanding the Probability Ratio</h2>
+        
+        <div class="card">
+          <h3>What is This Ratio?</h3>
+          <p>
+            At the heart of PPO is this ratio:
+          </p>
+          <div class="math">
+            $$r_t(\theta) = \frac{\pi_{\theta}(a_t|s_t)}{\pi_{\theta_{old}}(a_t|s_t)}$$
+          </div>
+          <p style="margin-top: 12px;">
+            Let's break this down in plain English:
+          </p>
+          <ul>
+            <li>
+              $\pi_{\theta_{old}}(a_t|s_t)$ is the probability that your OLD policy
+              would take action $a_t$ in state $s_t$
+            </li>
+            <li>
+              $\pi_{\theta}(a_t|s_t)$ is the probability that your NEW (updated)
+              policy would take the same action
+            </li>
+            <li>
+              The ratio tells you <strong>how much more or less likely the new policy
+              is to take that action</strong>
+            </li>
+          </ul>
+        </div>
+
+        <div class="grid two">
+          <div class="card">
+            <h3>What Different Ratios Mean</h3>
+            <ul>
+              <li>
+                <strong>$r_t$ = 1:</strong> New policy and old policy have the same
+                probability for this action. No change.
+              </li>
+              <li>
+                <strong>$r_t$ = 2:</strong> New policy is twice as likely to take
+                this action compared to old policy.
+              </li>
+              <li>
+                <strong>$r_t$ = 0.5:</strong> New policy is half as likely to take
+                this action (making it less probable).
+              </li>
+              <li>
+                <strong>$r_t$ = 1.5:</strong> Modest increase in probability.
+              </li>
+            </ul>
+          </div>
+
+          <div class="card">
+            <h3>Example: Robot at Crossroads</h3>
+            <p>
+              Imagine a robot at a crossroads with three possible actions:
+            </p>
+            <p><strong>Old Policy Probabilities:</strong></p>
+            <ul>
+              <li>Go Left: 20% (0.20)</li>
+              <li>Go Straight: 50% (0.50)</li>
+              <li>Go Right: 30% (0.30)</li>
+            </ul>
+            <p><strong>New Policy Probabilities (after one gradient step):</strong></p>
+            <ul>
+              <li>Go Left: 40% (0.40) → Ratio = 0.40/0.20 = <strong>2.0</strong></li>
+              <li>Go Straight: 45% (0.45) → Ratio = 0.45/0.50 = <strong>0.9</strong></li>
+              <li>Go Right: 15% (0.15) → Ratio = 0.15/0.30 = <strong>0.5</strong></li>
+            </ul>
+            <p>
+              The "Go Left" action has a ratio of 2.0 - the new policy is <strong>twice as likely</strong>
+              to choose it! If $\epsilon = 0.2$, PPO will clip this to 1.2 (only 20% increase allowed),
+              preventing such a drastic change. Meanwhile, "Go Straight" (ratio 0.9) and "Go Right"
+              (ratio 0.5) stay within the safe zone and aren't clipped.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section id="objective" class="section">
+        <h2>The PPO Objective Function</h2>
+        
+        <div class="card">
+          <h3>What Are We Trying to Maximize?</h3>
+          <p>
+            In basic policy gradient, we maximize:
+          </p>
+          <div class="math">
+            $$L^{simple}(\theta) = \mathbb{E}[\pi_\theta(a_t|s_t) \hat{A}_t]$$
+          </div>
+          <p style="margin-top: 12px;">
+            This says: "Increase probability of actions with positive advantage
+            ($\hat{A}_t > 0$), decrease probability of actions with negative advantage."
+          </p>
+          <p>
+            But this can lead to too-large updates! So PPO modifies this with clipping:
+          </p>
+          <div class="math">
+            $$L^{CLIP}(\theta) = \mathbb{E}[\min(r_t(\theta) \hat{A}_t, \text{clip}(r_t(\theta), 1-\epsilon, 1+\epsilon) \hat{A}_t)]$$
+          </div>
+          <p style="margin-top: 12px;">
+            where $r_t(\theta) = \frac{\pi_{\theta}(a_t|s_t)}{\pi_{\theta_{old}}(a_t|s_t)}$
+          </p>
+          <p style="margin-top: 12px;"><strong>Why the min() function?</strong></p>
+          <p>
+            The $\min$ ensures we're <em>pessimistic</em>. We take the <strong>smaller</strong> of the two values:
+            either the unclipped objective or the clipped one. This prevents the policy from becoming
+            overconfident. If an action looks too good to be true (very high ratio), we don't fully trust it
+            and limit the update. It's like saying "I'll improve, but I won't believe in miracles."
+          </p>
+        </div>
+
+        <div class="card">
+          <h3>Breaking Down the Clip Function</h3>
+          <p>
+            The function $\text{clip}(r_t, 1-\epsilon, 1+\epsilon)$ means:
+          </p>
+          <ul>
+            <li>If $r_t$ is less than $1-\epsilon$, return $1-\epsilon$</li>
+            <li>If $r_t$ is greater than $1+\epsilon$, return $1+\epsilon$</li>
+            <li>Otherwise, return $r_t$ unchanged</li>
+          </ul>
+          <p>
+            Common value: $\epsilon = 0.2$, so we clip to the range $[0.8, 1.2]$.
+          </p>
+          <p><strong>Numerical Examples with $\epsilon = 0.2$:</strong></p>
+          <ul>
+            <li>$r_t = 0.5$ → $\text{clip}(0.5, 0.8, 1.2) = 0.8$ (too low, clipped up)</li>
+            <li>$r_t = 0.9$ → $\text{clip}(0.9, 0.8, 1.2) = 0.9$ (within range, unchanged)</li>
+            <li>$r_t = 1.0$ → $\text{clip}(1.0, 0.8, 1.2) = 1.0$ (perfect, no change needed)</li>
+            <li>$r_t = 1.15$ → $\text{clip}(1.15, 0.8, 1.2) = 1.15$ (within range, unchanged)</li>
+            <li>$r_t = 1.5$ → $\text{clip}(1.5, 0.8, 1.2) = 1.2$ (too high, clipped down)</li>
+            <li>$r_t = 2.0$ → $\text{clip}(2.0, 0.8, 1.2) = 1.2$ (way too high, clipped down)</li>
+          </ul>
+          <p>
+            Notice how values in the safe zone $[0.8, 1.2]$ pass through unchanged, but anything
+            outside gets pulled back to the boundary. This creates a "trust region" for safe updates.
+          </p>
+        </div>
+      </section>
+
+      <section id="clipping-detailed" class="section">
+        <h2>How Clipping Works: Deep Dive</h2>
+        
+        <div class="card">
+          <h3>The Min Operation</h3>
+          <p>
+            The objective takes the minimum of two terms:
+          </p>
+          <div class="math">
+            $$\min(r_t(\theta) \hat{A}_t, \text{clip}(r_t, 1-\epsilon, 1+\epsilon) \hat{A}_t)$$
+          </div>
+          <p style="margin-top: 12px;">
+            Why minimum? Because we want to be pessimistic – we take the worse of
+            the two options to prevent over-optimistic updates.
+          </p>
+        </div>
+
+        <div class="grid two">
+          <div class="card">
+            <h3>Case 1: Positive Advantage ($\hat{A}_t > 0$)</h3>
+            <p>
+              When advantage is positive, this action was better than average. We
+              want to increase its probability.
+            </p>
+            <ul>
+              <li>If $r_t < 1$: New policy already assigns lower probability. Don't
+                penalize further – use the clipped version.</li>
+              <li>If $1 < r_t < 1+\epsilon$: New policy assigns higher probability.
+                Good! Allow this increase.</li>
+              <li>If $r_t > 1+\epsilon$: New policy assigns MUCH higher probability.
+                Too risky! Clip it to $1+\epsilon$.</li>
+            </ul>
+            <p>
+              <strong>Effect:</strong> Can't increase probability by more than
+              $\epsilon$ in one step.
+            </p>
+            <p style="margin-top: 12px;"><strong>Numerical Example ($\epsilon = 0.2$, $\hat{A}_t = +2.0$):</strong></p>
+            <ul>
+              <li>$r_t = 0.8$: Unclipped = $0.8 \times 2.0 = 1.6$, Clipped = $0.8 \times 2.0 = 1.6$, 
+                  Objective = $\min(1.6, 1.6) = 1.6$ ✓</li>
+              <li>$r_t = 1.1$: Unclipped = $1.1 \times 2.0 = 2.2$, Clipped = $1.1 \times 2.0 = 2.2$, 
+                  Objective = $\min(2.2, 2.2) = 2.2$ ✓</li>
+              <li>$r_t = 1.5$: Unclipped = $1.5 \times 2.0 = 3.0$, Clipped = $1.2 \times 2.0 = 2.4$, 
+                  Objective = $\min(3.0, 2.4) = 2.4$ ⚠️ <em>Clipped!</em></li>
+            </ul>
+            <p>
+              When $r_t = 1.5$, the policy wants to increase this action's probability by 50%,
+              but PPO says "No! Maximum 20% increase." This prevents overconfidence from one good episode.
+            </p>
+          </div>
+
+          <div class="card">
+            <h3>Case 2: Negative Advantage ($\hat{A}_t < 0$)</h3>
+            <p>
+              When advantage is negative, this action was worse than average. We
+              want to decrease its probability.
+            </p>
+            <ul>
+              <li>If $r_t > 1$: New policy already assigns higher probability. Don't
+                penalize further – use the clipped version.</li>
+              <li>If $1-\epsilon < r_t < 1$: New policy assigns lower probability.
+                Good! Allow this decrease.</li>
+              <li>If $r_t < 1-\epsilon$: New policy assigns MUCH lower probability.
+                Too drastic! Clip it to $1-\epsilon$.</li>
+            </ul>
+            <p>
+              <strong>Effect:</strong> Can't decrease probability by more than
+              $\epsilon$ in one step.
+            </p>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Visual Intuition</h3>
+          <p>
+            Imagine a safety zone around ratio = 1.0 (no change). The clipping
+            creates a "trust region" where updates are allowed freely. Outside this
+            region, updates are limited. This prevents catastrophic updates while
+            still allowing steady improvement.
+          </p>
+        </div>
+      </section>
+
+      <section id="advantages" class="section">
+        <h2>What Are Advantages?</h2>
+        
+        <div class="card">
+          <h3>The Advantage Function Explained</h3>
+          <p>
+            The advantage $\hat{A}_t$ tells us: <strong>"How much better is this
+            action compared to the average action I could have taken?"</strong>
+          </p>
+          <p>
+            It's defined as:
+          </p>
+          <div class="math">
+            $$\hat{A}_t = Q(s_t, a_t) - V(s_t)$$
+          </div>
+          <p style="margin-top: 12px;">
+            Where:
+          </p>
+          <ul>
+            <li>$Q(s_t, a_t)$ = expected total reward from taking action $a_t$ in
+              state $s_t$ and then following the policy</li>
+            <li>$V(s_t)$ = expected total reward from state $s_t$ when following
+              the policy (average over all possible actions)</li>
+          </ul>
+        </div>
+
+        <div class="grid two">
+          <div class="card">
+            <h3>Interpreting Advantages</h3>
+            <ul>
+              <li>
+                <strong>$\hat{A}_t > 0$:</strong> This action is better than average.
+                We should make it more likely.
+              </li>
+              <li>
+                <strong>$\hat{A}_t = 0$:</strong> This action is average. No need to
+                change its probability much.
+              </li>
+              <li>
+                <strong>$\hat{A}_t < 0$:</strong> This action is worse than average.
+                We should make it less likely.
+              </li>
+            </ul>
+          </div>
+
+          <div class="card">
+            <h3>Example: Chess Move Analysis</h3>
+            <p>
+              In a chess game, you have three possible moves:
+            </p>
+            <p><strong>Current board state:</strong> $V(s) = 0.60$ (60% win probability on average)</p>
+            <ul>
+              <li><strong>Move 1 - Queen forward:</strong>
+                <ul>
+                  <li>$Q(s, a_1) = 0.80$ (80% win probability)</li>
+                  <li>$\hat{A}_1 = 0.80 - 0.60 = +0.20$ ✓ <em>Excellent move!</em></li>
+                </ul>
+              </li>
+              <li><strong>Move 2 - Pawn forward:</strong>
+                <ul>
+                  <li>$Q(s, a_2) = 0.58$ (58% win probability)</li>
+                  <li>$\hat{A}_2 = 0.58 - 0.60 = -0.02$ ✗ <em>Slightly worse than average</em></li>
+                </ul>
+              </li>
+              <li><strong>Move 3 - Knight retreat:</strong>
+                <ul>
+                  <li>$Q(s, a_3) = 0.35$ (35% win probability)</li>
+                  <li>$\hat{A}_3 = 0.35 - 0.60 = -0.25$ ✗✗ <em>Bad move! Much worse!</em></li>
+                </ul>
+              </li>
+            </ul>
+            <p>
+              PPO will <strong>increase</strong> the probability of Move 1 (positive advantage),
+              <strong>slightly decrease</strong> Move 2, and <strong>significantly decrease</strong>
+              Move 3 (large negative advantage). This guides the policy toward better actions!
+            </p>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Why Use Advantages Instead of Returns?</h3>
+          <p>
+            We could just use the total return, but advantages are better because:
+          </p>
+          <ul>
+            <li><strong>Lower variance:</strong> By subtracting the baseline $V(s)$,
+              we reduce randomness in the gradient estimates.</li>
+            <li><strong>Better credit assignment:</strong> Focuses on which actions
+              are better or worse relative to what's typical in that state.</li>
+          </ul>
+        </div>
+      </section>
+
+      <section id="gae" class="section">
+        <h2>Generalized Advantage Estimation (GAE)</h2>
+        
+        <div class="card">
+          <h3>The Problem: How to Compute Advantages?</h3>
+          <p>
+            We know advantages are important, but how do we actually calculate them?
+            We don't know the true $Q(s,a)$ and $V(s)$ values – we have to estimate
+            them from data.
+          </p>
+          <p>
+            There are different ways to estimate advantages, and they all involve a
+            tradeoff:
+          </p>
+          <ul>
+            <li><strong>Short-term estimates:</strong> Low variance (stable) but
+              high bias (might be wrong)</li>
+            <li><strong>Long-term estimates:</strong> Low bias (more accurate) but
+              high variance (noisy)</li>
+          </ul>
+          <p>
+            <strong>GAE finds a sweet spot between these extremes.</strong>
+          </p>
+        </div>
+
+        <div class="card">
+          <h3>The TD Residual (Delta)</h3>
+          <p>
+            We start by computing the temporal-difference (TD) error at each step:
+          </p>
+          <div class="math">
+            $$\delta_t = r_t + \gamma V(s_{t+1}) - V(s_t)$$
+          </div>
+          <p style="margin-top: 12px;">
+            This is a one-step estimate of advantage. It says:
+          </p>
+          <p>
+            "I got reward $r_t$ and moved to a new state with value $V(s_{t+1})$.
+            How does this compare to what I expected from the original state $V(s_t)$?"
+          </p>
+          <ul>
+            <li>If $\delta_t > 0$: Things went better than expected</li>
+            <li>If $\delta_t < 0$: Things went worse than expected</li>
+          </ul>
+          <p style="margin-top: 12px;"><strong>Step-by-Step Example:</strong></p>
+          <p>A robot collects coins in a maze. At time $t$:</p>
+          <ul>
+            <li>Current state value: $V(s_t) = 10$ (expects to get 10 coins from here)</li>
+            <li>Immediate reward: $r_t = 2$ (collected 2 coins this step)</li>
+            <li>Next state value: $V(s_{t+1}) = 12$ (expects 12 coins from new position)</li>
+            <li>Discount factor: $\gamma = 0.99$</li>
+          </ul>
+          <p><strong>Calculate TD error:</strong></p>
+          <p>$\delta_t = 2 + 0.99 \times 12 - 10 = 2 + 11.88 - 10 = 3.88$</p>
+          <p>
+            <strong>Interpretation:</strong> $\delta_t = 3.88 > 0$ means this action led to a better
+            outcome than expected! The robot got 2 coins and ended up in a position worth 11.88
+            (discounted), which totals 13.88 - that's 3.88 more than the original expectation of 10.
+          </p>
+        </div>
+
+        <div class="card">
+          <h3>Building Up to GAE</h3>
+          <p>
+            We could use just $\delta_t$ as our advantage, but that's very short-sighted
+            (only looks one step ahead). Or we could look many steps ahead by summing
+            multiple deltas. GAE lets us blend these approaches:
+          </p>
+          <div class="math">
+            $$\hat{A}_t^{GAE} = \sum_{l=0}^{\infty} (\gamma \lambda)^l \delta_{t+l}$$
+          </div>
+          <p style="margin-top: 12px;">
+            This is an exponentially-weighted sum of TD errors. The parameter
+            $\lambda$ controls how far we look ahead:
+          </p>
+          <ul>
+            <li>$\lambda = 0$: Only use $\delta_t$ (one-step, low variance, high bias)</li>
+            <li>$\lambda = 1$: Use all future deltas equally (like Monte Carlo, low
+              bias, high variance)</li>
+            <li>$\lambda = 0.95$: A balanced middle ground (typical choice)</li>
+          </ul>
+          <p style="margin-top: 12px;"><strong>Complete Calculation Example:</strong></p>
+          <p>Suppose we have 3 time steps with $\gamma = 0.99$ and $\lambda = 0.95$:</p>
+          <ul>
+            <li>$\delta_0 = 5.0$, $\delta_1 = 3.0$, $\delta_2 = 2.0$</li>
+          </ul>
+          <p><strong>For time step 0:</strong></p>
+          <p>$\hat{A}_0 = \delta_0 + (\gamma\lambda)\delta_1 + (\gamma\lambda)^2\delta_2$</p>
+          <p>$\hat{A}_0 = 5.0 + (0.99 \times 0.95) \times 3.0 + (0.99 \times 0.95)^2 \times 2.0$</p>
+          <p>$\hat{A}_0 = 5.0 + 0.9405 \times 3.0 + 0.8845 \times 2.0$</p>
+          <p>$\hat{A}_0 = 5.0 + 2.82 + 1.77 = 9.59$</p>
+          <p>
+            Notice how later deltas get exponentially less weight (2.82 vs 1.77). With $\lambda = 0.95$,
+            we trust near-future estimates more than far-future ones, creating a nice bias-variance balance!
+          </p>
+        </div>
+
+        <div class="grid two">
+          <div class="card">
+            <h3>Intuition: The Lambda Parameter</h3>
+            <p>
+              Think of $\lambda$ as controlling how much you trust your value
+              function $V(s)$:
+            </p>
+            <ul>
+              <li><strong>Low $\lambda$:</strong> "I trust my value function. Let's
+                use it to estimate future rewards."</li>
+              <li><strong>High $\lambda$:</strong> "I don't fully trust my value
+                function. Let's use actual observed rewards."</li>
+            </ul>
+            <p>
+              In practice, $\lambda = 0.95$ works well for most tasks.
+            </p>
+          </div>
+
+          <div class="card">
+            <h3>Why GAE Matters</h3>
+            <p>
+              GAE significantly improves PPO's performance because:
+            </p>
+            <ul>
+              <li>Reduces noise in gradient estimates (more stable training)</li>
+              <li>Balances between short-term and long-term thinking</li>
+              <li>Makes learning more efficient (fewer samples needed)</li>
+              <li>One less thing to tune – usually $\lambda=0.95$ works well</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section id="algorithm" class="section">
+        <h2>Complete PPO Algorithm</h2>
+        
+        <div class="card">
+          <h3>Overview</h3>
+          <p>
+            Now that we understand all the pieces, let's put them together into the
+            complete PPO algorithm. Here's the full training loop:
+          </p>
+          <p style="margin-top: 12px;"><strong>Real-World Scenario:</strong></p>
+          <p>
+            Imagine training a robot to navigate a warehouse. The robot starts with a random
+            policy (moves randomly). Through PPO, it will learn to navigate efficiently by:
+          </p>
+          <ul>
+            <li>Collecting experience (trying different paths)</li>
+            <li>Computing which actions led to faster delivery (advantages)</li>
+            <li>Updating its policy to prefer better paths (but not too drastically!)</li>
+            <li>Repeating this process until it becomes an expert navigator</li>
+          </ul>
+          <p>Let's see how PPO makes this happen step by step:</p>
+        </div>
+
+        <ol class="steps">
+          <li>
+            <strong>Initialize:</strong> Create a policy network $\pi_\theta$ (outputs
+            action probabilities) and a value network $V_\phi$ (estimates state values).
+            These can share some layers.
+          </li>
+          <li>
+            <strong>Collect Data:</strong> Run your current policy in the environment
+            for $N$ steps (or $T$ complete episodes). Record state $s_t$, action $a_t$,
+            reward $r_t$, and next state $s_{t+1}$ for each step.
+          </li>
+          <li>
+            <strong>Compute Advantages:</strong> Using the collected data:
+            <ul>
+              <li>Calculate TD errors: $\delta_t = r_t + \gamma V_\phi(s_{t+1}) - V_\phi(s_t)$</li>
+              <li>Compute GAE advantages: $\hat{A}_t = \sum_{l=0}^{\infty} (\gamma \lambda)^l \delta_{t+l}$</li>
+              <li>Compute returns: $R_t = \hat{A}_t + V_\phi(s_t)$</li>
+            </ul>
+          </li>
+          <li>
+            <strong>Update Networks (Multiple Epochs):</strong> For $K$ epochs:
+            <ul>
+              <li>Shuffle the data and create mini-batches</li>
+              <li>For each mini-batch:
+                <ul>
+                  <li>Compute probability ratio: $r_t = \frac{\pi_\theta(a_t|s_t)}{\pi_{\theta_{old}}(a_t|s_t)}$</li>
+                  <li>Compute clipped objective: $L^{CLIP} = \min(r_t \hat{A}_t, \text{clip}(r_t, 1-\epsilon, 1+\epsilon) \hat{A}_t)$</li>
+                  <li>Compute value loss: $L^{VF} = (V_\phi(s_t) - R_t)^2$</li>
+                  <li>Compute entropy bonus: $S = -\sum \pi_\theta(a|s) \log \pi_\theta(a|s)$</li>
+                  <li><strong>Total loss:</strong> $L = -L^{CLIP} + c_1 L^{VF} - c_2 S$</li>
+                  <li>Update $\theta$ and $\phi$ using gradient descent</li>
+                </ul>
+              </li>
+            </ul>
+          </li>
+          <li>
+            <strong>Repeat:</strong> Go back to step 2. Keep collecting data with the
+            updated policy and training until performance is satisfactory.
+          </li>
+        </ol>
+
+        <div class="card">
+          <h3>Understanding the Total Loss Formula</h3>
+          <p>
+            PPO's total loss combines three important components. Understanding each piece
+            is crucial to see how PPO balances multiple objectives during training:
+          </p>
+          <div class="math">
+            $$L_{total} = -L^{CLIP}(\theta) + c_1 \cdot L^{VF}(\phi) - c_2 \cdot S(\theta)$$
+          </div>
+          
+          <h4 style="margin-top: 20px;">Component 1: Policy Loss (Clipped Objective)</h4>
+          <div class="math">
+            $$-L^{CLIP}(\theta) = -\mathbb{E}[\min(r_t(\theta) \hat{A}_t, \text{clip}(r_t, 1-\epsilon, 1+\epsilon) \hat{A}_t)]$$
+          </div>
+          <p>
+            <strong>Why negative?</strong> We want to <em>maximize</em> $L^{CLIP}$, which means
+            we <em>minimize</em> $-L^{CLIP}$. Optimization libraries use minimization, so we flip the sign.
+          </p>
+          <p>
+            <strong>What it does:</strong> This is the core PPO objective. It encourages actions with
+            positive advantage while preventing too-large policy changes through clipping.
+          </p>
+          <p><strong>Example values:</strong></p>
+          <ul>
+            <li>Good action ($\hat{A}_t = +5$, $r_t = 1.1$): $L^{CLIP} = 5.5$ → $-L^{CLIP} = -5.5$ (small loss, good!)</li>
+            <li>Bad action ($\hat{A}_t = -3$, $r_t = 0.9$): $L^{CLIP} = -2.7$ → $-L^{CLIP} = +2.7$ (penalty)</li>
+          </ul>
+
+          <h4 style="margin-top: 20px;">Component 2: Value Function Loss</h4>
+          <div class="math">
+            $$c_1 \cdot L^{VF}(\phi) = c_1 \cdot \frac{1}{2}\mathbb{E}[(V_\phi(s_t) - R_t)^2]$$
+          </div>
+          <p>
+            <strong>What it does:</strong> Trains the value function $V_\phi(s)$ to accurately predict
+            expected returns. This is crucial because advantages are computed as $\hat{A}_t = R_t - V(s_t)$.
+            If $V(s)$ is inaccurate, advantages will be wrong!
+          </p>
+          <p>
+            <strong>The coefficient $c_1$:</strong> Typically $c_1 = 0.5$ or $1.0$. This balances how much
+            we care about value prediction vs policy improvement. Higher $c_1$ means "focus more on getting
+            value predictions right."
+          </p>
+          <p><strong>Example calculation:</strong></p>
+          <ul>
+            <li>Predicted value: $V_\phi(s_t) = 10.0$</li>
+            <li>Actual return: $R_t = 12.5$</li>
+            <li>Error: $(10.0 - 12.5)^2 = 6.25$</li>
+            <li>With $c_1 = 0.5$: contribution to loss = $0.5 \times 6.25 = 3.125$</li>
+          </ul>
+          <p>
+            <strong>Why squared error?</strong> Penalizes large mistakes more than small ones. Being
+            off by 5 ($5^2 = 25$) is penalized much more than being off by 1 ($1^2 = 1$).
+          </p>
+
+          <h4 style="margin-top: 20px;">Component 3: Entropy Bonus</h4>
+          <div class="math">
+            $$-c_2 \cdot S(\theta) = -c_2 \cdot \mathbb{E}[-\sum_a \pi_\theta(a|s) \log \pi_\theta(a|s)]$$
+          </div>
+          <p>
+            <strong>Why negative again?</strong> High entropy is good (encourages exploration), so we
+            want to <em>maximize</em> entropy, which means <em>minimize</em> negative entropy.
+          </p>
+          <p>
+            <strong>What it does:</strong> Prevents the policy from becoming too deterministic too quickly.
+            Entropy measures randomness – higher entropy means more exploration, lower entropy means
+            more exploitation.
+          </p>
+          <p>
+            <strong>The coefficient $c_2$:</strong> Typically $c_2 = 0.01$. Small because we want exploration
+            but not too much. If $c_2$ is too high, the agent never commits to good actions. If too low,
+            it gets stuck exploiting early discoveries.
+          </p>
+          <p><strong>Concrete example:</strong></p>
+          <ul>
+            <li><strong>Deterministic policy:</strong> $\pi$ = [0.98, 0.01, 0.01] → Entropy ≈ 0.14 (very low)
+              <br/>Agent almost always picks action 0. Little exploration.</li>
+            <li><strong>Balanced policy:</strong> $\pi$ = [0.5, 0.3, 0.2] → Entropy ≈ 1.03 (medium)
+              <br/>Agent tries different actions regularly.</li>
+            <li><strong>Uniform policy:</strong> $\pi$ = [0.33, 0.33, 0.34] → Entropy ≈ 1.10 (high)
+              <br/>Agent explores randomly, barely exploiting knowledge.</li>
+          </ul>
+          <p>
+            With $c_2 = 0.01$, if entropy drops to 0.14, we add penalty $-0.01 \times 0.14 = -0.0014$
+            to the loss, gently encouraging the policy to explore more.
+          </p>
+
+          <h4 style="margin-top: 20px;">Putting It All Together</h4>
+          <p><strong>Complete example with numbers:</strong></p>
+          <ul>
+            <li>Policy loss: $-L^{CLIP} = -4.2$ (good actions taken)</li>
+            <li>Value loss: $c_1 L^{VF} = 0.5 \times 3.8 = 1.9$ (value predictions have some error)</li>
+            <li>Entropy bonus: $-c_2 S = -0.01 \times 0.85 = -0.0085$ (encourage slight exploration)</li>
+            <li><strong>Total loss:</strong> $L_{total} = -4.2 + 1.9 - 0.0085 = -2.3085$</li>
+          </ul>
+          <p>
+            The optimizer will adjust $\theta$ and $\phi$ to reduce this total loss, which means:
+            improving the policy, getting better value predictions, and maintaining some exploration.
+          </p>
+          <p style="margin-top: 12px;">
+            <strong>Design wisdom:</strong> This multi-objective loss is why PPO works so well! Each
+            component addresses a different challenge: stable policy improvement (clipping), accurate
+            predictions (value loss), and sufficient exploration (entropy). The coefficients let you
+            tune the balance for your specific problem.
+          </p>
+        </div>
+
+        <div class="grid two">
+          <div class="card">
+            <h3>Why Multiple Epochs?</h3>
+            <p>
+              Unlike basic policy gradients that use each data sample only once, PPO
+              reuses the same batch of data for multiple gradient updates (typically
+              3-10 epochs).
+            </p>
+            <p>
+              <strong>Why is this okay?</strong> Because clipping prevents the policy
+              from changing too much! The old policy probabilities $\pi_{\theta_{old}}$
+              stay fixed during these epochs, and clipping ensures updates remain
+              conservative even with multiple passes.
+            </p>
+            <p>
+              This makes PPO much more sample-efficient than algorithms that throw
+              away data after one use.
+            </p>
+            <p style="margin-top: 12px;"><strong>Timeline Example:</strong></p>
+            <ul>
+              <li><strong>Step 1:</strong> Collect 2048 experiences from environment (expensive!)</li>
+              <li><strong>Steps 2-11:</strong> Train on same 2048 experiences for 10 epochs (cheap!)
+                <ul>
+                  <li>Epoch 1: Big improvements, ratio changes but stays within clip bounds</li>
+                  <li>Epochs 2-5: Steady improvements, learning useful patterns</li>
+                  <li>Epochs 6-10: Smaller improvements, policy hitting clip boundaries more often</li>
+                </ul>
+              </li>
+              <li><strong>Result:</strong> Got 10x more learning from the same data! This is like studying
+                for an exam by reviewing your notes multiple times instead of reading them once and throwing
+                them away.</li>
+            </ul>
+          </div>
+
+          <div class="card">
+            <h3>Key Implementation Details</h3>
+            <ul>
+              <li><strong>Normalize advantages:</strong> Subtract mean and divide by
+                std for more stable training</li>
+              <li><strong>Clip value function too:</strong> Can also clip value loss
+                to prevent large value updates</li>
+              <li><strong>Learning rate schedule:</strong> Often decay learning rate
+                linearly over training</li>
+              <li><strong>Parallel environments:</strong> Run multiple environments
+                simultaneously to collect data faster</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section id="hyperparams" class="section">
+        <h2>Key Hyperparameters</h2>
+        
+        <div class="card">
+          <h3>Understanding PPO's Hyperparameters</h3>
+          <p>
+            PPO has several hyperparameters, but they have sensible default values
+            that work well across many tasks. Here's what each one controls:
+          </p>
+          <p style="margin-top: 12px;"><strong>Good News:</strong> Unlike many RL algorithms,
+            PPO is surprisingly robust to hyperparameter choices. The defaults ($\epsilon=0.2$,
+            $\lambda=0.95$, learning rate $3\times10^{-4}$) work well for most tasks! You can often
+            start with these and only tune if you encounter specific problems.</p>
+          <p style="margin-top: 12px;"><strong>Rule of Thumb:</strong></p>
+          <ul>
+            <li>If training is <em>unstable</em> (reward jumps around wildly): Decrease $\epsilon$, decrease learning rate</li>
+            <li>If training is <em>too slow</em> (barely improving): Increase batch size, increase $\epsilon$ slightly</li>
+            <li>If agent is <em>stuck in local optimum</em>: Increase entropy bonus</li>
+            <li>If gradients are <em>too noisy</em>: Decrease $\lambda$, increase batch size</li>
+          </ul>
+        </div>
+
+        <div class="grid three">
+          <div class="card">
+            <h3>Clip $\epsilon$</h3>
+            <p><strong>Typical values:</strong> 0.1–0.3 (commonly 0.2)</p>
+            <p>
+              Controls how much the policy can change in one update. Smaller values
+              make updates more conservative; larger values allow bigger changes.
+            </p>
+            <p><strong>When to tune:</strong> Decrease if training is unstable;
+              increase if learning is too slow.</p>
+          </div>
+          <div class="card">
+            <h3>GAE $\lambda$</h3>
+            <p><strong>Typical values:</strong> 0.9–0.97 (commonly 0.95)</p>
+            <p>
+              Controls bias-variance tradeoff in advantage estimation. Higher values
+              use more actual rewards (less bias, more variance).
+            </p>
+            <p><strong>When to tune:</strong> Increase if value function is poor;
+              decrease if gradients are too noisy.</p>
+          </div>
+          <div class="card">
+            <h3>Entropy Bonus $c_2$</h3>
+            <p><strong>Typical values:</strong> 0.001–0.01</p>
+            <p>
+              Encourages exploration by rewarding randomness in the policy. Higher
+              values promote more exploration.
+            </p>
+            <p><strong>When to tune:</strong> Increase if agent gets stuck; decrease
+              if agent is too random.</p>
+          </div>
+          <div class="card">
+            <h3>Learning Rate</h3>
+            <p><strong>Common:</strong> $3 \times 10^{-4}$</p>
+            <p>
+              How fast the networks are updated. PPO is less sensitive to this than
+              basic policy gradient methods.
+            </p>
+            <p><strong>When to tune:</strong> Use linear decay if training becomes
+              unstable later on.</p>
+          </div>
+          <div class="card">
+            <h3>Batch Size</h3>
+            <p><strong>Typical values:</strong> 2048–8192 steps</p>
+            <p>
+              How many environment steps to collect before each update. Larger
+              batches stabilize gradients but increase memory use.
+            </p>
+            <p><strong>When to tune:</strong> Increase for complex tasks; decrease
+              for simple ones.</p>
+          </div>
+          <div class="card">
+            <h3>Value Loss Coef $c_1$</h3>
+            <p><strong>Typical values:</strong> 0.5–1.0</p>
+            <p>
+              Balances policy and value function updates. Higher values prioritize
+              learning better value estimates.
+            </p>
+            <p><strong>When to tune:</strong> Rarely needs tuning; 0.5 works well.</p>
+          </div>
+          <div class="card">
+            <h3>Number of Epochs $K$</h3>
+            <p><strong>Typical values:</strong> 3–10</p>
+            <p>
+              How many times to iterate over each batch of data. More epochs increase
+              sample efficiency but risk overfitting to old data.
+            </p>
+            <p><strong>When to tune:</strong> Increase for simple tasks; decrease if
+              policy diverges.</p>
+          </div>
+          <div class="card">
+            <h3>Discount Factor $\gamma$</h3>
+            <p><strong>Typical values:</strong> 0.95–0.999</p>
+            <p>
+              How much to value future rewards. Higher values make the agent more
+              far-sighted; lower values make it more myopic.
+            </p>
+            <p><strong>When to tune:</strong> Higher for long-horizon tasks; lower
+              for short-term rewards.</p>
+          </div>
+          <div class="card">
+            <h3>Mini-batch Size</h3>
+            <p><strong>Typical values:</strong> 64–512</p>
+            <p>
+              Size of mini-batches for gradient updates within each epoch. Smaller
+              values add noise; larger values are more stable.
+            </p>
+            <p><strong>When to tune:</strong> Balance with available compute
+              resources.</p>
+          </div>
+        </div>
+      </section>
+
+      <section id="interactive-playground" class="section">
+        <h2>Interactive Playground</h2>
+        <div class="grid two">
+          <div class="card">
+            <h3>Clipping Playground</h3>
+            <p>
+              Change the ratio $r_t$, advantage $\hat{A}_t$, and clip $\epsilon$ to
+              see how the objective changes. The chart shows how clipping prevents
+              extreme updates.
+            </p>
+            <div class="control">
+              <label>Ratio $r_t$ <span id="ratioValue">1.00</span></label>
+              <input type="range" id="ratio" min="0.5" max="1.5" step="0.01" value="1.00" />
+            </div>
+            <div class="control">
+              <label>Advantage $\hat{A}_t$ <span id="advValue">1.00</span></label>
+              <input type="range" id="adv" min="-2" max="2" step="0.05" value="1" />
+            </div>
+            <div class="control">
+              <label>Clip $\epsilon$ <span id="epsValue">0.20</span></label>
+              <input type="range" id="eps" min="0.05" max="0.4" step="0.01" value="0.2" />
+            </div>
+            <div class="result">
+              <div>Unclipped: <strong id="unclippedOut">0.00</strong></div>
+              <div>Clipped: <strong id="clippedOut">0.00</strong></div>
+              <div>Objective: <strong id="objectiveOut">0.00</strong></div>
+            </div>
+            <canvas id="clipChart" width="420" height="220"></canvas>
+            <p style="margin-top: 12px; font-size: 14px; color: #6b7280;">
+              <strong>Blue line:</strong> unclipped objective. <strong>Green line:</strong>
+              clipped objective. The clipped version is flat outside the clip region.
+            </p>
+          </div>
+
+
+        </div>
+      </section>
+
+      <section id="exercises" class="section">
+        <h2>Exercises & Quiz</h2>
+        <p>
+          Test your understanding with these questions. Click "Check Answer" to see
+          if you got it right!
+        </p>
+        <div class="grid two">
+          <div class="card">
+            <h3>Exercise 1: Clipping Intuition</h3>
+            <p>
+              If $\hat{A}_t$ is positive and $r_t$ is greater than $1+\epsilon$,
+              what happens to the objective?
+            </p>
+            <div class="quiz" data-answer="b">
+              <label><input type="radio" name="q1" value="a" /> It keeps increasing with $r_t$.</label>
+              <label><input type="radio" name="q1" value="b" /> It is capped by the clipped term.</label>
+              <label><input type="radio" name="q1" value="c" /> It becomes negative.</label>
+              <button class="button small" data-check>Check Answer</button>
+              <div class="feedback"></div>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3>Exercise 2: GAE Effect</h3>
+            <p>
+              Increasing $\lambda$ generally:
+            </p>
+            <div class="quiz" data-answer="c">
+              <label><input type="radio" name="q2" value="a" /> Increases bias, decreases variance.</label>
+              <label><input type="radio" name="q2" value="b" /> Does not affect bias or variance.</label>
+              <label><input type="radio" name="q2" value="c" /> Decreases bias, increases variance.</label>
+              <button class="button small" data-check>Check Answer</button>
+              <div class="feedback"></div>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3>Exercise 3: Policy Update</h3>
+            <p>
+              Which term encourages exploration in PPO?
+            </p>
+            <div class="quiz" data-answer="a">
+              <label><input type="radio" name="q3" value="a" /> Entropy bonus</label>
+              <label><input type="radio" name="q3" value="b" /> Value loss</label>
+              <label><input type="radio" name="q3" value="c" /> Clipping range</label>
+              <button class="button small" data-check>Check Answer</button>
+              <div class="feedback"></div>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3>Exercise 4: Practical Tuning</h3>
+            <p>
+              Training becomes unstable with very large policy updates. Which
+              adjustment is most likely to help quickly?
+            </p>
+            <div class="quiz" data-answer="b">
+              <label><input type="radio" name="q4" value="a" /> Increase learning rate</label>
+              <label><input type="radio" name="q4" value="b" /> Decrease clip $\epsilon$</label>
+              <label><input type="radio" name="q4" value="c" /> Reduce entropy bonus</label>
+              <button class="button small" data-check>Check Answer</button>
+              <div class="feedback"></div>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3>Exercise 5: Ratio Understanding</h3>
+            <p>
+              If the old policy had 10% probability for an action and the new policy
+              has 30% probability, what is $r_t$?
+            </p>
+            <div class="quiz" data-answer="c">
+              <label><input type="radio" name="q5" value="a" /> 0.33</label>
+              <label><input type="radio" name="q5" value="b" /> 2.0</label>
+              <label><input type="radio" name="q5" value="c" /> 3.0</label>
+              <button class="button small" data-check>Check Answer</button>
+              <div class="feedback"></div>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3>Exercise 6: Advantage Sign</h3>
+            <p>
+              An action has advantage $\hat{A}_t = -0.5$. What should PPO do?
+            </p>
+            <div class="quiz" data-answer="b">
+              <label><input type="radio" name="q6" value="a" /> Increase the action's probability</label>
+              <label><input type="radio" name="q6" value="b" /> Decrease the action's probability</label>
+              <label><input type="radio" name="q6" value="c" /> Keep the probability the same</label>
+              <button class="button small" data-check>Check Answer</button>
+              <div class="feedback"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="summary" class="section">
+        <h2>Summary</h2>
+        <div class="card">
+          <h3>Key Takeaways</h3>
+          <p>
+            Congratulations on making it through the tutorial! Here are the most
+            important points to remember:
+          </p>
+          <ul>
+            <li><strong>PPO's core idea:</strong> Limit how much the policy changes
+              per update to ensure stability.</li>
+            <li><strong>Clipping mechanism:</strong> The ratio $r_t$ is clipped to
+              $[1-\epsilon, 1+\epsilon]$ to prevent drastic policy changes.</li>
+            <li><strong>Advantages:</strong> Tell us which actions are better or worse
+              than average in each state.</li>
+            <li><strong>GAE:</strong> Balances bias and variance in advantage
+              estimation using the $\lambda$ parameter.</li>
+            <li><strong>Sample efficiency:</strong> PPO reuses data for multiple
+              epochs, making it more efficient than basic policy gradient.</li>
+            <li><strong>Robust performance:</strong> PPO works well across many tasks
+              with default hyperparameters.</li>
+          </ul>
+        </div>
+
+        <div class="grid two">
+          <div class="card">
+            <h3>Next Steps</h3>
+            <p>Ready to implement PPO yourself? Here are some resources:</p>
+            <ul>
+              <li>OpenAI's Spinning Up in Deep RL (excellent tutorials)</li>
+              <li>Stable Baselines3 (production-quality PPO implementation)</li>
+              <li>Gym environments to test your agent</li>
+              <li>The original PPO paper by Schulman et al. (2017)</li>
+            </ul>
+          </div>
+
+          <div class="card">
+            <h3>Common Pitfalls</h3>
+            <p>Watch out for these when implementing PPO:</p>
+            <ul>
+              <li>Forgetting to normalize advantages (causes instability)</li>
+              <li>Not storing old policy probabilities (breaks the ratio)</li>
+              <li>Using too many epochs (policy can diverge from old data)</li>
+              <li>Ignoring value function clipping (can help stability)</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+  <script src="app.js"></script>
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      renderMathInElement(document.body, {
+        delimiters: [
+          { left: "$$", right: "$$", display: true },
+          { left: "$", right: "$", display: false },
+        ],
+      });
+    });
+  </script>
+</body>
+</html>
