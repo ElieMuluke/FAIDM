@@ -134,6 +134,10 @@ function parseList(text) {
 }
 
 function computeGAEValues() {
+  if (!rewardsEl || !valuesEl || !gammaEl || !lambdaEl || !gaeOut) {
+    return;
+  }
+
   const rewards = parseList(rewardsEl.value);
   const values = parseList(valuesEl.value);
   const gamma = parseFloat(gammaEl.value);
@@ -157,6 +161,9 @@ function computeGAEValues() {
 }
 
 function updateGAESliders() {
+  if (!gammaEl || !lambdaEl || !gammaValue || !lambdaValue) {
+    return;
+  }
   gammaValue.textContent = Number(gammaEl.value).toFixed(3);
   lambdaValue.textContent = Number(lambdaEl.value).toFixed(2);
 }
@@ -165,29 +172,82 @@ ratioEl.addEventListener("input", computeObjective);
 advEl.addEventListener("input", computeObjective);
 epsEl.addEventListener("input", computeObjective);
 
-computeGAE.addEventListener("click", computeGAEValues);
-gammaEl.addEventListener("input", updateGAESliders);
-lambdaEl.addEventListener("input", updateGAESliders);
-
-updateGAESliders();
+if (computeGAE && gammaEl && lambdaEl) {
+  computeGAE.addEventListener("click", computeGAEValues);
+  gammaEl.addEventListener("input", updateGAESliders);
+  lambdaEl.addEventListener("input", updateGAESliders);
+  updateGAESliders();
+}
 computeObjective();
+
+const quizExplanations = {
+  q1: {
+    correct: "✓ Correct! When r_t > 1+ε and advantage is positive, the unclipped objective keeps growing (ratio × advantage). But the clipped version caps r_t at 1+ε, creating a flat line. The min() function chooses the clipped (smaller) value, so the objective stops growing.",
+    a: "✗ Incorrect. If we didn't clip, the objective would keep increasing. But PPO uses clipping to prevent this.",
+    b: "✓ This is the right answer! The clipped term acts as a safety ceiling.",
+    c: "✗ Incorrect. The objective doesn't become negative just because r_t is large. It gets capped instead."
+  },
+  q2: {
+    correct: "✓ Correct! Higher λ (closer to 1) means more future TD residuals are included in the advantage estimate. This reduces bias (better estimates) but increases variance (more noise from far-away rewards). Lower λ (closer to 0) uses mostly immediate rewards—low variance but biased.",
+    a: "✗ Incorrect. This is backwards! Increasing λ actually decreases bias and increases variance.",
+    b: "✗ Incorrect. λ definitely affects the bias-variance tradeoff in advantage estimation.",
+    c: "✓ This is correct! This is the fundamental bias-variance tradeoff of GAE."
+  },
+  q3: {
+    correct: "✓ Correct! The entropy bonus -c₂·S in the loss encourages the policy to maintain randomness. If entropy is high, the agent explores more actions. This prevents premature convergence to suboptimal strategies and helps discover better policies.",
+    a: "✓ This is the right answer! Entropy bonus directly encourages exploration.",
+    b: "✗ Incorrect. Value loss measures prediction accuracy, not exploration.",
+    c: "✗ Incorrect. Clipping prevents too-large updates, but doesn't directly encourage exploration."
+  },
+  q4: {
+    correct: "✓ Correct! Decreasing ε makes the clipping region narrower (e.g., [0.9, 1.1] instead of [0.8, 1.2]). This prevents large policy changes, which directly stabilizes training when updates are too drastic.",
+    a: "✗ Incorrect! Increasing learning rate makes updates larger, which would worsen instability.",
+    b: "✓ This is right! Tighter clipping = smaller policy changes = more stable training.",
+    c: "✗ Incorrect. Entropy bonus helps exploration but doesn't directly address large updates."
+  },
+  q5: {
+    correct: "✓ Correct! r_t = π_new(a|s) / π_old(a|s) = 0.30 / 0.10 = 3.0. The new policy increased the action probability by 3x, so the ratio is 3.0.",
+    a: "✗ Incorrect. 0.33 is the inverse ratio (10% / 30%). We compute new / old, not old / new.",
+    b: "✗ Incorrect. 2.0 would be if the new policy was 20%, not 30%.",
+    c: "✓ This is correct! 30% / 10% = 3.0"
+  },
+  q6: {
+    correct: "✓ Correct! Negative advantage means this action is worse than average for that state. PPO decreases its probability by multiplying by a ratio < 1. This removes bad actions from the policy.",
+    a: "✗ Incorrect. We never want to increase the probability of worse-than-average actions.",
+    b: "✓ This is the right answer! Negative advantage → decrease probability.",
+    c: "✗ Incorrect. If an action is worse than average, we should change it, not keep it the same."
+  }
+};
 
 const quizzes = document.querySelectorAll(".quiz");
 quizzes.forEach((quiz) => {
   const button = quiz.querySelector("[data-check]");
   const feedback = quiz.querySelector(".feedback");
   const answer = quiz.dataset.answer;
+  const quizName = quiz.parentElement.querySelector("input[type=radio]").name; // e.g., "q1"
 
   button.addEventListener("click", () => {
     const choice = quiz.querySelector("input[type=radio]:checked");
     if (!choice) {
-      feedback.textContent = "Select an answer first.";
+      feedback.innerHTML = "<span style='color: #f59e0b;'>⚠ Please select an answer first.</span>";
+      feedback.style.marginTop = "12px";
       return;
     }
-    if (choice.value === answer) {
-      feedback.textContent = "Correct! Great job.";
+
+    const explanations = quizExplanations[quizName] || {};
+    const isCorrect = choice.value === answer;
+
+    if (isCorrect) {
+      feedback.innerHTML = `<span style='color: #10b981; font-weight: 500;'>${explanations.correct || "✓ Correct!"}</span>`;
     } else {
-      feedback.textContent = "Not quite. Try reviewing the section above.";
+      const selectedExpl = explanations[choice.value] || `✗ Incorrect. The correct answer is "${answer}". ${explanations.correct || "Review the concepts above."}`;
+      feedback.innerHTML = `<span style='color: #ef4444; font-weight: 500;'>${selectedExpl}</span>`;
     }
+
+    feedback.style.marginTop = "12px";
+    feedback.style.padding = "12px";
+    feedback.style.borderRadius = "6px";
+    feedback.style.backgroundColor = isCorrect ? "#ecfdf5" : "#fef2f2";
+    feedback.style.lineHeight = "1.6";
   });
 });
